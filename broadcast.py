@@ -37,47 +37,13 @@ def customOnMessage(message):
 MAX_DISCOVERY_RETRIES = 10
 GROUP_CA_PATH = "./groupCA/"
 
-# Read in command-line parameters
-parser = argparse.ArgumentParser()
-parser.add_argument("-e", "--endpoint", action="store", required=True, dest="host", help="Your AWS IoT custom endpoint")
-parser.add_argument("-r", "--rootCA", action="store", required=True, dest="rootCAPath", help="Root CA file path")
-parser.add_argument("-c", "--cert", action="store", dest="certificatePath", help="Certificate file path")
-parser.add_argument("-k", "--key", action="store", dest="privateKeyPath", help="Private key file path")
-parser.add_argument("-n", "--thingName", action="store", dest="thingName", default="Bot", help="Targeted thing name")
-parser.add_argument("-t", "--topic", action="store", dest="topic", default="sdk/test/Python", help="Targeted topic")
-parser.add_argument("-m", "--mode", action="store", dest="mode", default="both",
-                    help="Operation modes: %s"%str(AllowedActions))
-parser.add_argument("-M", "--message", action="store", dest="message", default="Hello World!",
-                    help="Message to publish")
-
-args = parser.parse_args()
-host = args.host
-rootCAPath = args.rootCAPath
-certificatePath = args.certificatePath
-privateKeyPath = args.privateKeyPath
-clientId = args.thingName
-thingName = args.thingName
-topic = args.topic
-
-if args.mode not in AllowedActions:
-    parser.error("Unknown --mode option %s. Must be one of %s" % (args.mode, str(AllowedActions)))
-    exit(2)
-
-if not args.certificatePath or not args.privateKeyPath:
-    parser.error("Missing credentials for authentication, you must specify --cert and --key args.")
-    exit(2)
-
-if not os.path.isfile(rootCAPath):
-    parser.error("Root CA path does not exist {}".format(rootCAPath))
-    exit(3)
-
-if not os.path.isfile(certificatePath):
-    parser.error("No certificate found at {}".format(certificatePath))
-    exit(3)
-
-if not os.path.isfile(privateKeyPath):
-    parser.error("No private key found at {}".format(privateKeyPath))
-    exit(3)
+host = AWS_IOT_GREENGRASS_ENDPOINT
+rootCAPath = DIR_ROOTCA
+certificatePath = DIR_CERT
+privateKeyPath = DIR_KEY
+clientId = THING_NAME
+thingName = THING_NAME
+topic = TOPIC
 
 # Configure logging
 logger = logging.getLogger("AWSIoTPythonSDK.core")
@@ -188,38 +154,31 @@ if not connected:
     sys.exit(-2)
 
 # Successfully connected to the core
-check1=check2=check3=check4=False
-if args.mode == 'both' or args.mode == 'subscribe':
-    check1 = myAWSIoTMQTTClient1.subscribe(topic, 0, None)
-    check2 = myAWSIoTMQTTClient2.subscribe(topic, 0, None)
-    check3 = myAWSIoTMQTTClient3.subscribe(topic, 0, None)
-    check4 = myAWSIoTMQTTClient4.subscribe(topic, 0, None)
+if MODE == 'both' or MODE == 'subscribe':
+    myAWSIoTMQTTClient1.subscribe(topic, 0, None)
+    myAWSIoTMQTTClient2.subscribe(topic, 0, None)
+    myAWSIoTMQTTClient3.subscribe(topic, 0, None)
+    myAWSIoTMQTTClient4.subscribe(topic, 0, None)
+
 
 while 1:
-    if check1 & check2 & check3 & check4:
-        print("Successful connection with all clients")
+    if count == NUMBER_OF_CLIENT :
+        print("Successful connection with clients")
         break
 
-while 1:
-    if count == 4 :
-        print("Broadcast to devices")
-        break
-
-
-time.sleep(2)
-
-loopCount = 0
-
-if args.mode == 'both' or args.mode == 'publish':
+if MODE == 'both' or MODE == 'publish':
     message = {}
-    message['message'] = args.message
-    message['sequence'] = loopCount
+    message['message'] = MESSAGE
     messageJson = json.dumps(message)
     myAWSIoTMQTTClient1.publish(topic, messageJson, 0)
     myAWSIoTMQTTClient2.publish(topic, messageJson, 0)
     myAWSIoTMQTTClient3.publish(topic, messageJson, 0)
     myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
-    if args.mode == 'both':
-        print('Published topic %s: %s\n' % (topic, messageJson))
-    loopCount += 1
+    if MODE == 'both':
+        print("\n\n\n------------------------------------------------------------------")
+        print("Broadcast to devices %s: %s" % (topic, messageJson))
+        print("Run server.py")
+
+#run server.py
+
 
