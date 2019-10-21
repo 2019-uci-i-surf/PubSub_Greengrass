@@ -32,9 +32,10 @@ from client import run_client
 AllowedActions = ['both', 'publish', 'subscribe']
 
 # General message notification callback
+broadcast = 0
 def customOnMessage(message):
-    global count
-    count = count + 1
+    global broadcast
+    broadcast = 1
     print('Received message on topic %s: %s\n' % (message.topic, message.payload))
 
 MAX_DISCOVERY_RETRIES = 10
@@ -147,8 +148,12 @@ if MODE == 'both' or MODE == 'publish':
     print('Send message to server %s: %s\n' % (topic, messageJson))
 
 #run client.py
-while count!=1:
-    print("\n\n\n------------------------------------------------------------------")
-    print("Start Send Video")
-    print("Run client.py")
-    run_client()
+while 1:
+    if(broadcast==1):
+        break
+
+print("\n\n\n------------------------------------------------------------------")
+print("Start Send Video")
+print("Run client.py")
+
+run_client()

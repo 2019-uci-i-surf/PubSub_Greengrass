@@ -171,11 +171,11 @@ if MODE == 'both' or MODE == 'publish':
     myAWSIoTMQTTClient2.publish(topic, messageJson, 0)
     myAWSIoTMQTTClient3.publish(topic, messageJson, 0)
     myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
-    if MODE == 'both':
-        print("\n\n\n------------------------------------------------------------------")
-        print("Broadcast to devices %s: %s" % (topic, messageJson))
-        print("Run server.py")
-        run_server()
+
+    print("\n\n\n------------------------------------------------------------------")
+    print("Broadcast to devices %s: %s" % (topic, messageJson))
+    print("Run server.py")
+    run_server()
 
 #run server.py
 

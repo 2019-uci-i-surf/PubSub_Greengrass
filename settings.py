@@ -6,21 +6,21 @@ AWS_IOT_GREENGRASS_ENDPOINT = r'adb3j4sb3x8on-ats.iot.us-west-2.amazonaws.com'
 TOPIC = r'message/ready'
 MODE = r'both'
 DIR_ROOTCA = r'certification/root-ca-cert.pem'
-DIR_CERT = r'certification/b23fc3ba4f.cert.pem'
-DIR_KEY = r'certification/b23fc3ba4f.private.key'
-THING_NAME = r'Unsang_Laptop'
-MESSAGE = THING_NAME + r"ready to send message!"
+DIR_CERT = r'certification/b23fc3ba4f.cert.pem'     # *
+DIR_KEY = r'certification/b23fc3ba4f.private.key'   # *
+THING_NAME = r'Unsang_Laptop'                       # *
+MESSAGE = THING_NAME + r" ready to send message!"
 
 # Need to change on Client part
-CLIENT_ID = "Laptop"
-CLIENT_HOST = "192.168.1.8"
+CLIENT_ID = "Laptop"                                # *
+CLIENT_HOST = "192.168.1.8"                         # *
 NUMBER_OF_SEND_VIDEO = 1
 RATE_OF_SENDING_PART = 20
 
 # Need to change on Server part
-SERVER_QUEUE_SIZE = 50
-NUMBER_OF_RECEIVE_VIDEOS = 4
-NUMBER_OF_CLIENT = 4
+SERVER_QUEUE_SIZE = 50                              # *
+NUMBER_OF_RECEIVE_VIDEOS = 4                        # *
+NUMBER_OF_CLIENT = 4                                # *
 CLIENT1_HOST = "192.168.1.8"
 CLIENT2_HOST = "192.168.1.3"
 CLIENT3_HOST = "192.168.1.2"
