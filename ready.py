@@ -135,11 +135,6 @@ if not connected:
     print("Cannot connect to core %s. Exiting..." % coreInfo.coreThingArn)
     sys.exit(-2)
 
-# Successfully connected to the core
-if MODE == 'both' or MODE == 'subscribe':
-    myAWSIoTMQTTClient.subscribe(topic, 0, None)
-time.sleep(2)
-
 if MODE == 'both' or MODE == 'publish':
     message = {}
     message['message'] = MESSAGE
@@ -147,12 +142,16 @@ if MODE == 'both' or MODE == 'publish':
     myAWSIoTMQTTClient.publish(topic, messageJson, 0)
     print('Send message to server %s: %s\n' % (topic, messageJson))
 
+time.sleep(2)
+if MODE == 'both' or MODE == 'subscribe':
+    myAWSIoTMQTTClient.subscribe(topic, 0, None)
+
 #run client.py
 while 1:
     if(broadcast==1):
         break
 
-print("\n\n\n------------------------------------------------------------------")
+print("\n\n\n------------------------------------------------------------------------------------")
 print("Start Send Video")
 print("Run client.py")
 
