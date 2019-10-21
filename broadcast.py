@@ -24,6 +24,7 @@ from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCor
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
 from settings import *
+from server import run_server
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
@@ -125,9 +126,6 @@ myAWSIoTMQTTClient4.onMessage = customOnMessage
 
 connected = False
 for connectivityInfo in coreInfo.connectivityInfoList:
-    #currentHost = connectivityInfo.host
-    #currentPort = connectivityInfo.port
-
     print("Trying to connect to core at %s:%d" % (CLIENT1_HOST, CLIENT_PORT))
     myAWSIoTMQTTClient1.configureEndpoint(CLIENT1_HOST, CLIENT_PORT)
     print("Trying to connect to core at %s:%d" % (CLIENT2_HOST, CLIENT_PORT))
@@ -161,10 +159,9 @@ if MODE == 'both' or MODE == 'subscribe':
     myAWSIoTMQTTClient4.subscribe(topic, 0, None)
 
 
-while 1:
-    if count == NUMBER_OF_CLIENT :
-        print("Successful connection with clients")
-        break
+while count != NUMBER_OF_CLIENT:
+    print("Successful connection with clients")
+    break
 
 if MODE == 'both' or MODE == 'publish':
     message = {}
@@ -178,6 +175,7 @@ if MODE == 'both' or MODE == 'publish':
         print("\n\n\n------------------------------------------------------------------")
         print("Broadcast to devices %s: %s" % (topic, messageJson))
         print("Run server.py")
+        run_server()
 
 #run server.py
 

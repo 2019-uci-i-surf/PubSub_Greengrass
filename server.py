@@ -32,6 +32,6 @@ class Server:
         for conn_thread in thread_list:
             conn_thread.join()
 
-if __name__ == '__main__':
+def run_server():
     server = Server(SERVER_HOST, SERVER_PORT)
     server.run_task()

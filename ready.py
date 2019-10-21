@@ -26,12 +26,15 @@ from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCor
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
 from settings import *
-import socket
+from client import run_client
+
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
 # General message notification callback
 def customOnMessage(message):
+    global count
+    count = count + 1
     print('Received message on topic %s: %s\n' % (message.topic, message.payload))
 
 MAX_DISCOVERY_RETRIES = 10
@@ -114,8 +117,8 @@ myAWSIoTMQTTClient.onMessage = customOnMessage
 
 connected = False
 for connectivityInfo in coreInfo.connectivityInfoList:
-    print("Trying to connect to core at %s:%d" % (socket.gethostbyname(socket.getfqdn()), CLIENT_PORT))
-    currentHost = socket.gethostbyname(socket.getfqdn())
+    print("Trying to connect to core at %s:%d" % (CLIENT_HOST, CLIENT_PORT))
+    currentHost = CLIENT_HOST
     currentPort = CLIENT_PORT
     myAWSIoTMQTTClient.configureEndpoint(currentHost, currentPort)
     try:
@@ -144,7 +147,8 @@ if MODE == 'both' or MODE == 'publish':
     print('Send message to server %s: %s\n' % (topic, messageJson))
 
 #run client.py
-if MODE == 'both':
+while count!=1:
     print("\n\n\n------------------------------------------------------------------")
     print("Start Send Video")
     print("Run client.py")
+    run_client()

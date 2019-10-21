@@ -13,6 +13,7 @@ MESSAGE = THING_NAME + r"ready to send message!"
 
 # Need to change on Client part
 CLIENT_ID = "Laptop"
+CLIENT_HOST = "192.168.1.8"
 NUMBER_OF_SEND_VIDEO = 1
 RATE_OF_SENDING_PART = 20
 
