@@ -11,7 +11,7 @@ THING_NAME = r'Unsang_Laptop'                       # *
 MESSAGE = THING_NAME + r" Broadcast"
 
 # Need to change on Client part
-CLIENT_ID = "Laptop"                                # *
+CLIENT_ID = THING_NAME                                # *
 NUMBER_OF_SEND_VIDEO = 1
 RATE_OF_SENDING_PART = 20
 
