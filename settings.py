@@ -1,27 +1,25 @@
 # Need to change on Both part
 SERVER_HOST = '192.168.1.7'
 SERVER_PORT = 10001
-
 AWS_IOT_GREENGRASS_ENDPOINT = r'adb3j4sb3x8on-ats.iot.us-west-2.amazonaws.com'
-TOPIC = r'message/ready'
 MODE = r'both'
+TOPIC = r'message/ready'
 DIR_ROOTCA = r'certification/root-ca-cert.pem'
 DIR_CERT = r'certification/b23fc3ba4f.cert.pem'     # *
 DIR_KEY = r'certification/b23fc3ba4f.private.key'   # *
 THING_NAME = r'Unsang_Laptop'                       # *
-MESSAGE = THING_NAME + r" ready to send message!"
+MESSAGE = THING_NAME + r" Broadcast"
 
 # Need to change on Client part
 CLIENT_ID = "Laptop"                                # *
-CLIENT_HOST = "192.168.1.8"                         # *
 NUMBER_OF_SEND_VIDEO = 1
 RATE_OF_SENDING_PART = 20
 
 # Need to change on Server part
 SERVER_QUEUE_SIZE = 50                              # *
-NUMBER_OF_RECEIVE_VIDEOS = 4                        # *
-NUMBER_OF_CLIENT = 4                                # *
-CLIENT1_HOST = "192.168.1.8"
+NUMBER_OF_RECEIVE_VIDEOS = 1                        # *
+NUMBER_OF_CLIENT = 1                                # *
+CLIENT1_HOST = "192.168.1.4"
 CLIENT2_HOST = "192.168.1.3"
 CLIENT3_HOST = "192.168.1.2"
 CLIENT4_HOST = "192.168.1.5"

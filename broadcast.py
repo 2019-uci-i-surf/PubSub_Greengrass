@@ -38,13 +38,18 @@ def customOnMessage(message):
 MAX_DISCOVERY_RETRIES = 10
 GROUP_CA_PATH = "./groupCA/"
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-t", "--topic", action="store", dest="topic", default="sdk/test/Python", help="Targeted topic")
+
+args = parser.parse_args()
 host = AWS_IOT_GREENGRASS_ENDPOINT
 rootCAPath = DIR_ROOTCA
 certificatePath = DIR_CERT
 privateKeyPath = DIR_KEY
 clientId = THING_NAME
 thingName = THING_NAME
-topic = TOPIC
+topic = args.topic
+
 
 # Configure logging
 logger = logging.getLogger("AWSIoTPythonSDK.core")
@@ -110,36 +115,41 @@ if not discovered:
 
 # Iterate through all connection options for the core and use the first successful one
 myAWSIoTMQTTClient1 = AWSIoTMQTTClient(clientId)
-myAWSIoTMQTTClient2 = AWSIoTMQTTClient(clientId)
-myAWSIoTMQTTClient3 = AWSIoTMQTTClient(clientId)
-myAWSIoTMQTTClient4 = AWSIoTMQTTClient(clientId)
+#myAWSIoTMQTTClient2 = AWSIoTMQTTClient(clientId)
+#myAWSIoTMQTTClient3 = AWSIoTMQTTClient(clientId)
+#myAWSIoTMQTTClient4 = AWSIoTMQTTClient(clientId)
 
 myAWSIoTMQTTClient1.configureCredentials(groupCA, privateKeyPath, certificatePath)
-myAWSIoTMQTTClient2.configureCredentials(groupCA, privateKeyPath, certificatePath)
-myAWSIoTMQTTClient3.configureCredentials(groupCA, privateKeyPath, certificatePath)
-myAWSIoTMQTTClient4.configureCredentials(groupCA, privateKeyPath, certificatePath)
+#myAWSIoTMQTTClient2.configureCredentials(groupCA, privateKeyPath, certificatePath)
+#myAWSIoTMQTTClient3.configureCredentials(groupCA, privateKeyPath, certificatePath)
+#myAWSIoTMQTTClient4.configureCredentials(groupCA, privateKeyPath, certificatePath)
 
 myAWSIoTMQTTClient1.onMessage = customOnMessage
-myAWSIoTMQTTClient2.onMessage = customOnMessage
-myAWSIoTMQTTClient3.onMessage = customOnMessage
-myAWSIoTMQTTClient4.onMessage = customOnMessage
+#myAWSIoTMQTTClient2.onMessage = customOnMessage
+#myAWSIoTMQTTClient3.onMessage = customOnMessage
+#myAWSIoTMQTTClient4.onMessage = customOnMessage
 
 connected = False
 for connectivityInfo in coreInfo.connectivityInfoList:
-    print("Trying to connect to core at %s:%d" % (CLIENT1_HOST, CLIENT_PORT))
-    myAWSIoTMQTTClient1.configureEndpoint(CLIENT1_HOST, CLIENT_PORT)
-    print("Trying to connect to core at %s:%d" % (CLIENT2_HOST, CLIENT_PORT))
-    myAWSIoTMQTTClient2.configureEndpoint(CLIENT2_HOST, CLIENT_PORT)
-    print("Trying to connect to core at %s:%d" % (CLIENT3_HOST, CLIENT_PORT))
-    myAWSIoTMQTTClient3.configureEndpoint(CLIENT3_HOST, CLIENT_PORT)
-    print("Trying to connect to core at %s:%d" % (CLIENT4_HOST, CLIENT_PORT))
-    myAWSIoTMQTTClient4.configureEndpoint(CLIENT4_HOST, CLIENT_PORT)
+    currentHost = connectivityInfo.host
+    currentPort = connectivityInfo.port
+    print("Trying to connect to core at %s:%d" % (currentHost, currentPort))
+    myAWSIoTMQTTClient1.configureEndpoint("192.168.1.8", currentPort)
+
+    #print("Trying to connect to core at %s:%d" % (CLIENT1_HOST, CLIENT_PORT))
+    #myAWSIoTMQTTClient1.configureEndpoint(CLIENT1_HOST, CLIENT_PORT)
+    #print("Trying to connect to core at %s:%d" % (CLIENT2_HOST, CLIENT_PORT))
+    #myAWSIoTMQTTClient2.configureEndpoint(CLIENT2_HOST, CLIENT_PORT)
+    #print("Trying to connect to core at %s:%d" % (CLIENT3_HOST, CLIENT_PORT))
+    #myAWSIoTMQTTClient3.configureEndpoint(CLIENT3_HOST, CLIENT_PORT)
+    #print("Trying to connect to core at %s:%d" % (CLIENT4_HOST, CLIENT_PORT))
+    #myAWSIoTMQTTClient4.configureEndpoint(CLIENT4_HOST, CLIENT_PORT)
 
     try:
         myAWSIoTMQTTClient1.connect()
-        myAWSIoTMQTTClient2.connect()
-        myAWSIoTMQTTClient3.connect()
-        myAWSIoTMQTTClient4.connect()
+        #myAWSIoTMQTTClient2.connect()
+        #myAWSIoTMQTTClient3.connect()
+        #myAWSIoTMQTTClient4.connect()
         connected = True
         break
     except BaseException as e:
@@ -151,32 +161,40 @@ if not connected:
     print("Cannot connect to core %s. Exiting..." % coreInfo.coreThingArn)
     sys.exit(-2)
 
+message = {}
+message['message'] = MESSAGE
+messageJson = json.dumps(message)
+myAWSIoTMQTTClient1.publish(topic, messageJson, 0)
+
 # Successfully connected to the core
 if MODE == 'both' or MODE == 'subscribe':
     myAWSIoTMQTTClient1.subscribe(topic, 0, None)
-    myAWSIoTMQTTClient2.subscribe(topic, 0, None)
-    myAWSIoTMQTTClient3.subscribe(topic, 0, None)
-    myAWSIoTMQTTClient4.subscribe(topic, 0, None)
+    #myAWSIoTMQTTClient2.subscribe(topic, 0, None)
+    #myAWSIoTMQTTClient3.subscribe(topic, 0, None)
+    #myAWSIoTMQTTClient4.subscribe(topic, 0, None)
 
-
-while count != NUMBER_OF_CLIENT:
-    print("Successful connection with clients")
-    break
+while 1:
+    if count == NUMBER_OF_CLIENT:
+        print("Successful connection with clients")
+        time.sleep(3)
+        break
 
 if MODE == 'both' or MODE == 'publish':
     message = {}
     message['message'] = MESSAGE
     messageJson = json.dumps(message)
-    myAWSIoTMQTTClient1.publish(topic, messageJson, 0)
-    myAWSIoTMQTTClient2.publish(topic, messageJson, 0)
-    myAWSIoTMQTTClient3.publish(topic, messageJson, 0)
-    myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
+    myAWSIoTMQTTClient1.publish(topic, messageJson, 2)
+    #myAWSIoTMQTTClient2.publish(topic, messageJson, 0)
+    #myAWSIoTMQTTClient3.publish(topic, messageJson, 0)
+    #myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
+    print('Send message to clients %s: %s\n' % (topic, messageJson))
+    time.sleep(1)
 
-    print("\n\n\n------------------------------------------------------------------")
-    print("Broadcast to devices %s: %s" % (topic, messageJson))
-    print("Run server.py")
-    run_server()
+print("\n\n\n------------------------------------------------------------------")
+print("Broadcast to devices \n%s: %s" % (topic, messageJson))
+print("Run server.py")
+run_server()
 
-#run server.py
+
 
 

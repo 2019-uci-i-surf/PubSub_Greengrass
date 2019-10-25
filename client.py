@@ -13,3 +13,7 @@ def run_client():
 
     for proc in procs:
         proc.join()
+
+
+if __name__ == '__main__':
+    run_client()

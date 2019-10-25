@@ -1,42 +1,27 @@
-# /*
-# * Copyright 2010-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# *
-# * Licensed under the Apache License, Version 2.0 (the "License").
-# * You may not use this file except in compliance with the License.
-# * A copy of the License is located at
-# *
-# *  http://aws.amazon.com/apache2.0
-# *
-# * or in the "license" file accompanying this file. This file is distributed
-# * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-# * express or implied. See the License for the specific language governing
-# * permissions and limitations under the License.
-# */
-
-
 import os
 import sys
 import time
 import uuid
 import json
 import logging
-import argparse
 from AWSIoTPythonSDK.core.greengrass.discovery.providers import DiscoveryInfoProvider
 from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCore
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
+import client
 from settings import *
-from client import run_client
-
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
 # General message notification callback
-broadcast = 0
+broadcast=0
 def customOnMessage(message):
     global broadcast
-    broadcast = 1
-    print('Received message on topic %s: %s\n' % (message.topic, message.payload))
+    broadcast=1
+    print("\n\n\n ----------------------------------------------------------------------------------------------------\n"
+          "   Received message on topic %s: %s\n"
+          " ----------------------------------------------------------------------------------------------------\n"
+          % (message.topic, message.payload))
 
 MAX_DISCOVERY_RETRIES = 10
 GROUP_CA_PATH = "./groupCA/"
@@ -118,9 +103,10 @@ myAWSIoTMQTTClient.onMessage = customOnMessage
 
 connected = False
 for connectivityInfo in coreInfo.connectivityInfoList:
-    print("Trying to connect to core at %s:%d" % (CLIENT_HOST, CLIENT_PORT))
-    currentHost = CLIENT_HOST
-    currentPort = CLIENT_PORT
+    currentHost = "127.0.0.1"
+    currentPort = 8883
+
+    print("Trying to connect to core at %s:%d" % (currentHost, currentPort))
     myAWSIoTMQTTClient.configureEndpoint(currentHost, currentPort)
     try:
         myAWSIoTMQTTClient.connect()
@@ -135,24 +121,29 @@ if not connected:
     print("Cannot connect to core %s. Exiting..." % coreInfo.coreThingArn)
     sys.exit(-2)
 
+# Successfully connected to the core
+if MODE == 'both' or MODE == 'subscribe':
+    myAWSIoTMQTTClient.subscribe(topic, 0, None)
+time.sleep(2)
+
+loopCount = 0
+
 if MODE == 'both' or MODE == 'publish':
     message = {}
     message['message'] = MESSAGE
+    message['sequence'] = loopCount
     messageJson = json.dumps(message)
     myAWSIoTMQTTClient.publish(topic, messageJson, 0)
-    print('Send message to server %s: %s\n' % (topic, messageJson))
+    if MODE == 'publish':
+        print('Published topic %s: %s\n' % (topic, messageJson))
+    loopCount += 1
 
-time.sleep(2)
-if MODE == 'both' or MODE == 'subscribe':
-    myAWSIoTMQTTClient.subscribe(topic, 0, None)
-
-#run client.py
 while 1:
     if(broadcast==1):
         break
 
-print("\n\n\n------------------------------------------------------------------------------------")
-print("Start Send Video")
-print("Run client.py")
-
-run_client()
+print("   Start Send Video\n"
+      "   Run client.py\n"
+      " ----------------------------------------------------------------------------------------------------\n")
+time.sleep(5)
+client.run_client()
