@@ -115,20 +115,44 @@ if not discovered:
 
 # Iterate through all connection options for the core and use the first successful one
 myAWSIoTMQTTClient1 = AWSIoTMQTTClient(clientId)
+myAWSIoTMQTTClient2 = AWSIoTMQTTClient(clientId)
+myAWSIoTMQTTClient3 = AWSIoTMQTTClient(clientId)
+myAWSIoTMQTTClient4 = AWSIoTMQTTClient(clientId)
+
 myAWSIoTMQTTClient1.configureCredentials(groupCA, privateKeyPath, certificatePath)
+myAWSIoTMQTTClient2.configureCredentials(groupCA, privateKeyPath, certificatePath)
+myAWSIoTMQTTClient3.configureCredentials(groupCA, privateKeyPath, certificatePath)
+myAWSIoTMQTTClient4.configureCredentials(groupCA, privateKeyPath, certificatePath)
+
 myAWSIoTMQTTClient1.onMessage = customOnMessage
+myAWSIoTMQTTClient2.onMessage = customOnMessage
+myAWSIoTMQTTClient3.onMessage = customOnMessage
+myAWSIoTMQTTClient4.onMessage = customOnMessage
 
 connected = False
 for connectivityInfo in coreInfo.connectivityInfoList:
-    currentHost = connectivityInfo.host
-    currentPort = connectivityInfo.port
+    #currentHost = connectivityInfo.host
+    #currentPort = connectivityInfo.port
 
-    currentHost = "192.168.1.4"
     currentPort = 8883
-    print("Trying to connect to core at %s:%d" % (currentHost, currentPort))
-    myAWSIoTMQTTClient1.configureEndpoint(currentHost, currentPort)
+    print("Trying to connect to core at %s:%d" % (CLIENT1_HOST, currentPort))
+    myAWSIoTMQTTClient1.configureEndpoint(CLIENT1_HOST, currentPort)
+
+    print("Trying to connect to core at %s:%d" % (CLIENT2_HOST, currentPort))
+    myAWSIoTMQTTClient2.configureEndpoint(CLIENT2_HOST, currentPort)
+
+    print("Trying to connect to core at %s:%d" % (CLIENT3_HOST, currentPort))
+    myAWSIoTMQTTClient3.configureEndpoint(CLIENT3_HOST, currentPort)
+
+    print("Trying to connect to core at %s:%d" % (CLIENT4_HOST, currentPort))
+    myAWSIoTMQTTClient4.configureEndpoint(CLIENT4_HOST, currentPort)
+
     try:
         myAWSIoTMQTTClient1.connect()
+        myAWSIoTMQTTClient2.connect()
+        myAWSIoTMQTTClient3.connect()
+        myAWSIoTMQTTClient4.connect()
+
         connected = True
         break
     except BaseException as e:
@@ -143,6 +167,9 @@ if not connected:
 # Successfully connected to the core
 if MODE == 'both' or MODE == 'subscribe':
     myAWSIoTMQTTClient1.subscribe(topic, 0, None)
+    myAWSIoTMQTTClient2.subscribe(topic, 0, None)
+    myAWSIoTMQTTClient3.subscribe(topic, 0, None)
+    myAWSIoTMQTTClient4.subscribe(topic, 0, None)
 time.sleep(2)
 print("\n\n\n ----------------------------------------------------------------------------------------------------\n"
       "                                      Ready to accept client's message"
@@ -163,6 +190,9 @@ if MODE == 'both' or MODE == 'publish':
     message['sequence'] = loopCount
     messageJson = json.dumps(message)
     myAWSIoTMQTTClient1.publish(topic, messageJson, 0)
+    myAWSIoTMQTTClient2.publish(topic, messageJson, 0)
+    myAWSIoTMQTTClient3.publish(topic, messageJson, 0)
+    myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
     if MODE == 'publish':
         print('Published topic %s: %s\n' % (topic, messageJson))
     loopCount += 1

@@ -64,7 +64,7 @@ class ClientInstance:
 
     def _put_frame(self, body_size, frame_num, msg_body):
         self.put_count = self.put_count+1
-        print(self.client_id, "queue_size : ", self.frame_queue.qsize())
+        print("queue_size : ", self.frame_queue.qsize())
         if body_size and len(msg_body) == body_size:
             image = numpy.load(BytesIO(msg_body))['frame']
 
