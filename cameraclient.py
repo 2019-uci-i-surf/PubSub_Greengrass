@@ -1,25 +1,20 @@
 import numpy
-from socket import socket, AF_INET, SOCK_STREAM
+import json
 from io import BytesIO
 from settings import *
 import cv2
 import time
 from queue import Queue
-import math
+from ready import myAWSIoTMQTTClient
 
 class CameraClient:
     def __init__(self):
-        self.socket = socket(AF_INET, SOCK_STREAM)
+        #self.socket = socket(AF_INET, SOCK_STREAM)
         self.time_list=[]
         self.frame_rate=[]
         self.wait_send_queue = Queue()
         self.number_of_sent_frame = 0
         self.start_send_time = 0
-
-    def connect_to_server(self, host, port):
-        print('try to connect to server..')
-        self.socket.connect((host, port))
-        print('successfully connected to server')
 
     def put_frame(self, video_path):
         vidcap = cv2.VideoCapture(video_path)
@@ -65,7 +60,13 @@ class CameraClient:
 
     def send_frame(self):
         frame = self.wait_send_queue.get()
-        self.socket.sendall(frame)
+        #self.socket.sendall(frame)
+
+        msg = {}
+        msg['message'] = frame
+        messageJson = json.dumps(msg)
+        myAWSIoTMQTTClient.publish(TOPIC, messageJson, 0)
+
         self.number_of_sent_frame += 1
         print(CLIENT_ID, "sent frame : ", self.number_of_sent_frame)
 
@@ -79,6 +80,5 @@ class CameraClient:
     @staticmethod
     def mp_routine(host, port):
         cc = CameraClient()
-        cc.connect_to_server(host=host, port=port)
         cc.put_frame(video_path=VIDEO_PATH)
         cc.get_frame()

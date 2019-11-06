@@ -20,25 +20,41 @@ import time
 import uuid
 import json
 import logging
-import argparse
 from AWSIoTPythonSDK.core.greengrass.discovery.providers import DiscoveryInfoProvider
 from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCore
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
 from settings import *
-from server import run_server
+import server
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
 # General message notification callback
 count=0
+client_message=''
 def customOnMessage(message):
-    global count
-    count += 1
+    global client_message
+    get_message(message.payload)
     print("\n\n\n ----------------------------------------------------------------------------------------------------\n"
           "   Received message on topic %s: %s\n"
           " ----------------------------------------------------------------------------------------------------\n"
           % (message.topic, message.payload))
+
+def get_message(client_message):
+    global count
+    new_message = client_message.decode(errors="ignore")
+    message_idx = new_message.find("message")
+    device_idx = new_message.find("device")
+    device_message = new_message[device_idx+10: device_idx+14]
+    ready_message = new_message[message_idx+11:message_idx+16]
+    print(device_message)
+    print(ready_message)
+    print(message_idx)
+    print(device_idx)
+    if(ready_message=="READY"):
+        count=count+1
+        print("   Receive ready message from", device_message)
+    time.sleep(1)
 
 MAX_DISCOVERY_RETRIES = 10
 GROUP_CA_PATH = "./groupCA/"
@@ -205,5 +221,4 @@ print("\n ----------------------------------------------------------------------
       "\n -----------------------------------------------------------------------------------------\n"
       % (topic, messageJson))
 
-run_server()
-
+print("\n -----------------------------------------------------------------------------------------")

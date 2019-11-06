@@ -9,7 +9,13 @@ from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCor
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
 import client
+import json
 from settings import *
+import cv2
+import numpy
+from io import BytesIO
+from queue import Queue
+
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
@@ -128,22 +134,80 @@ time.sleep(2)
 
 loopCount = 0
 
+
 if MODE == 'both' or MODE == 'publish':
     message = {}
     message['message'] = MESSAGE
-    message['sequence'] = loopCount
+    message['device'] = THING_NAME
     messageJson = json.dumps(message)
     myAWSIoTMQTTClient.publish(topic, messageJson, 0)
-    if MODE == 'publish':
-        print('Published topic %s: %s\n' % (topic, messageJson))
-    loopCount += 1
+    print('Published topic %s: %s\n' % (topic, messageJson))
 
 while 1:
     if(broadcast==1):
         break
 
 print("   Start Send Video\n"
-      "   Run client.py\n"
       " ----------------------------------------------------------------------------------------------------\n")
 time.sleep(5)
-client.run_client()
+
+wait_send_queue = Queue()
+number_of_sent_frame = 0
+
+def put_frame():
+    sent_count = 0
+    vidcap = cv2.VideoCapture(VIDEO_PATH)
+    while True:
+        success, image = vidcap.read()
+        if not success:
+            print('video is not opened!')
+            break
+        sent_count += 1
+        bytes_io = BytesIO()
+        numpy.savez_compressed(bytes_io, frame=image)
+        bytes_io.seek(0)
+        bytes_image = bytes_io.read()  # byte per 1frame
+
+        msg = ('Start_Symbol' + CLIENT_ID + 'Id_Symbol' + str(len(bytes_image)) + 'Size_Symbol' + str(sent_count) + 'Frame_Num').encode() + bytes_image + ('End_Symbol').encode()
+        wait_send_queue.put(msg)
+
+def get_frame():
+    while wait_send_queue.empty():
+        continue
+    # start get frame from queue
+    start_send_time = time.time()
+
+    rate_count = RATE_OF_SENDING_PART
+    last_time = time.time()
+    while True:
+        current_time = time.time()
+        if current_time > last_time + 1:
+            last_time = current_time
+            rate_count = round(rate_count + RATE_OF_SENDING_PART, 3)
+        if rate_count >= 1:
+            send_frame()
+            rate_count = round(rate_count-1, 3)
+        #if number_of_sent_frame == NUMBER_OF_TOTAL_FRAME:
+        #    result()
+
+def send_frame():
+    frame = wait_send_queue.get()
+
+    msg = {}
+    msg['message'] = frame
+    messageJson = json.dumps(msg)
+    myAWSIoTMQTTClient.publish(TOPIC, messageJson, 0)
+
+    #number_of_sent_frame += 1
+    #print(CLIENT_ID, "sent frame : ", number_of_sent_frame)
+'''
+def result():
+    run_time = time.time()-start_send_time
+    print("\nSending of", CLIENT_ID, "complete")
+    print(self.number_of_sent_frame, "frames are sent.")
+    print("run time : ", run_time)
+    print("Avg Frame rate of sending:", self.number_of_sent_frame / run_time)
+'''
+
+put_frame()
+get_frame()

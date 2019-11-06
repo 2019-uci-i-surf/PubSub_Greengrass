@@ -4,6 +4,10 @@ from threading import Thread
 from settings import *
 from clientinstance import ClientInstance
 from queue import Queue
+import json
+import broadcast
+
+
 
 class Server:
     def __init__(self, host, port): # open socket
@@ -35,4 +39,8 @@ class Server:
 def run_server():
     server = Server(SERVER_HOST, SERVER_PORT)
     server.run_task()
+
+if __name__ == '__main__':
+    run_server()
+
 
