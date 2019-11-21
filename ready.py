@@ -16,6 +16,7 @@ from io import BytesIO
 from multiprocessing import Process, Queue
 
 start_time11 = time.time()
+send_count=0
 
 
 
@@ -154,7 +155,8 @@ time.sleep(5)
 def put_frame():
     put_count = 0
     vidcap = cv2.VideoCapture(VIDEO_PATH)
-    send_count=0
+    global send_count
+    send_count=send_count
     while True:
         success, image = vidcap.read()
         if success != True:
@@ -208,5 +210,6 @@ put_frame()
 print("running time : ", time.time() - start_time11)
 
 while 1:
-    continue
+    if send_count == 461:
+        break
 

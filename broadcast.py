@@ -262,3 +262,5 @@ while 1:
     if cur_frame>=a:
         a+=1
         print(cur_frame, "frame running time : ", time.time()-start_time11)
+    if cur_frame==461:
+        break
