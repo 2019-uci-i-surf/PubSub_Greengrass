@@ -1,5 +1,5 @@
 # Need to change on Both part
-SERVER_HOST = '192.168.1.11'
+SERVER_HOST = '192.168.1.9'
 SERVER_PORT = 10001
 AWS_IOT_GREENGRASS_ENDPOINT = r'adb3j4sb3x8on-ats.iot.us-west-2.amazonaws.com'
 MODE = r'both'
@@ -18,11 +18,58 @@ RATE_OF_SENDING_PART = 20
 # Need to change on Server part
 SERVER_QUEUE_SIZE = 50                              # *
 NUMBER_OF_CLIENT = 1                                # *
-CLIENT1_HOST = "192.168.1.8"
-CLIENT2_HOST = "192.168.1.5"
-CLIENT3_HOST = "192.168.1.3"
-CLIENT4_HOST = "192.168.1.7"
+CLIENT1_HOST = "192.168.1."
+CLIENT2_HOST = "192.168.1.11"
+CLIENT3_HOST = "192.168.1."
+CLIENT4_HOST = "192.168.1."
 CLIENT_PORT = 8883
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 NUMBER_OF_TOTAL_FRAME = 461
 VIDEO_PATH = r'video/Pexels Videos 1466210.mp4'

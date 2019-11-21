@@ -1,19 +1,5 @@
-# /*
-# * Copyright 2010-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# *
-# * Licensed under the Apache License, Version 2.0 (the "License").
-# * You may not use this file except in compliance with the License.
-# * A copy of the License is located at
-# *
-# *  http://aws.amazon.com/apache2.0
-# *
-# * or in the "license" file accompanying this file. This file is distributed
-# * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-# * express or implied. See the License for the specific language governing
-# * permissions and limitations under the License.
-# */
-
-
+import numpy
+from io import BytesIO
 import os
 import sys
 import time
@@ -25,36 +11,82 @@ from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCor
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
 from settings import *
-import server
+from queue import Queue
+from mobilenettest import MobileNetTest
+import base64
+
+
+start_time11 = time.time()
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
 # General message notification callback
 count=0
-client_message=''
+cur_frame=1
+single_frame=b""
+
 def customOnMessage(message):
-    global client_message
     get_message(message.payload)
-    print("\n\n\n ----------------------------------------------------------------------------------------------------\n"
-          "   Received message on topic %s: %s\n"
-          " ----------------------------------------------------------------------------------------------------\n"
-          % (message.topic, message.payload))
+    # print("\n\n\n ----------------------------------------------------------------------------------------------------\n"
+    #       "   Received message on topic %s: %s\n"
+    #       " ----------------------------------------------------------------------------------------------------\n"
+    #       % (message.topic, message.payload))
 
 def get_message(client_message):
     global count
-    new_message = client_message.decode(errors="ignore")
-    message_idx = new_message.find("message")
-    device_idx = new_message.find("device")
-    device_message = new_message[device_idx+10: device_idx+14]
-    ready_message = new_message[message_idx+11:message_idx+16]
-    print(device_message)
-    print(ready_message)
-    print(message_idx)
-    print(device_idx)
-    if(ready_message=="READY"):
-        count=count+1
-        print("   Receive ready message from", device_message)
-    time.sleep(1)
+    count = count
+    # print("first message : ", sys.getsizeof(client_message))
+    # print("asadasdasd : ", type(client_message))
+    # print("asdasdasda : ", client_message)
+
+    client_id_idx = client_message.find(b"client_id")
+    data_size_idx = client_message.find(b"data_size")
+    frame_num_idx = client_message.find(b"frame_num")
+    frame_data_idx = client_message.find(b"frame_data")
+    packet_end_idx = client_message.find(b"packet_end")
+
+    client_id = client_message[client_id_idx+10:data_size_idx].decode()
+    data_size = int(client_message[data_size_idx+10:frame_num_idx].decode())
+    frame_num = int(client_message[frame_num_idx+10:frame_data_idx].decode())
+    frame_data = client_message[frame_data_idx+11:packet_end_idx]
+
+    # print("2 : ", client_id)
+    # print("3 : ", data_size)
+    # print("4 : ", frame_num)
+    #
+    # print("5 : ", frame_data)
+    # print("5555555 : ", type(frame_data))
+    #
+    if frame_data == b"READY":
+        count = count + 1
+        print("   Receive ready message from", frame_data)
+    else:
+        if frame_num != 0:
+            make_frame(frame_num, frame_data)
+
+
+
+
+def make_frame(frame_num, frame_data):
+    global cur_frame
+    cur_frame = cur_frame
+    global single_frame
+    single_frame = single_frame
+    if frame_num == cur_frame:
+        single_frame+=frame_data
+    else:
+        image = numpy.load(BytesIO(single_frame))['frame']
+        #print("size : ", len(image), image)
+
+        run_mobilenet(image, cur_frame)
+
+        cur_frame = frame_num
+        single_frame = frame_data
+
+def run_mobilenet(frame, cur_frame):
+    myAWSIoTMQTTClient2.mobile_net.run(frame, cur_frame)
+    #print("frame num: ", cur_frame)
+    #print(frame)
 
 MAX_DISCOVERY_RETRIES = 10
 GROUP_CA_PATH = "./groupCA/"
@@ -130,20 +162,22 @@ if not discovered:
     sys.exit(-1)
 
 # Iterate through all connection options for the core and use the first successful one
-myAWSIoTMQTTClient1 = AWSIoTMQTTClient(clientId)
+#myAWSIoTMQTTClient1 = AWSIoTMQTTClient(clientId)
 myAWSIoTMQTTClient2 = AWSIoTMQTTClient(clientId)
-myAWSIoTMQTTClient3 = AWSIoTMQTTClient(clientId)
-myAWSIoTMQTTClient4 = AWSIoTMQTTClient(clientId)
+#myAWSIoTMQTTClient3 = AWSIoTMQTTClient(clientId)
+#myAWSIoTMQTTClient4 = AWSIoTMQTTClient(clientId)
 
-myAWSIoTMQTTClient1.configureCredentials(groupCA, privateKeyPath, certificatePath)
+myAWSIoTMQTTClient2.mobile_net = MobileNetTest(CLASS_NAMES, WEIGHT_PATH, INPUT_SHAPE)
+
+#myAWSIoTMQTTClient1.configureCredentials(groupCA, privateKeyPath, certificatePath)
 myAWSIoTMQTTClient2.configureCredentials(groupCA, privateKeyPath, certificatePath)
-myAWSIoTMQTTClient3.configureCredentials(groupCA, privateKeyPath, certificatePath)
-myAWSIoTMQTTClient4.configureCredentials(groupCA, privateKeyPath, certificatePath)
+#myAWSIoTMQTTClient3.configureCredentials(groupCA, privateKeyPath, certificatePath)
+#myAWSIoTMQTTClient4.configureCredentials(groupCA, privateKeyPath, certificatePath)
 
-myAWSIoTMQTTClient1.onMessage = customOnMessage
+#myAWSIoTMQTTClient1.onMessage = customOnMessage
 myAWSIoTMQTTClient2.onMessage = customOnMessage
-myAWSIoTMQTTClient3.onMessage = customOnMessage
-myAWSIoTMQTTClient4.onMessage = customOnMessage
+#myAWSIoTMQTTClient3.onMessage = customOnMessage
+#myAWSIoTMQTTClient4.onMessage = customOnMessage
 
 connected = False
 for connectivityInfo in coreInfo.connectivityInfoList:
@@ -152,22 +186,22 @@ for connectivityInfo in coreInfo.connectivityInfoList:
 
     currentPort = 8883
     print("Trying to connect to core at %s:%d" % (CLIENT1_HOST, currentPort))
-    myAWSIoTMQTTClient1.configureEndpoint(CLIENT1_HOST, currentPort)
+    #myAWSIoTMQTTClient1.configureEndpoint(CLIENT1_HOST, currentPort)
 
     print("Trying to connect to core at %s:%d" % (CLIENT2_HOST, currentPort))
     myAWSIoTMQTTClient2.configureEndpoint(CLIENT2_HOST, currentPort)
 
     print("Trying to connect to core at %s:%d" % (CLIENT3_HOST, currentPort))
-    myAWSIoTMQTTClient3.configureEndpoint(CLIENT3_HOST, currentPort)
+    #myAWSIoTMQTTClient3.configureEndpoint(CLIENT3_HOST, currentPort)
 
     print("Trying to connect to core at %s:%d" % (CLIENT4_HOST, currentPort))
-    myAWSIoTMQTTClient4.configureEndpoint(CLIENT4_HOST, currentPort)
+    #myAWSIoTMQTTClient4.configureEndpoint(CLIENT4_HOST, currentPort)
 
     try:
-        myAWSIoTMQTTClient1.connect()
+        #myAWSIoTMQTTClient1.connect()
         myAWSIoTMQTTClient2.connect()
-        myAWSIoTMQTTClient3.connect()
-        myAWSIoTMQTTClient4.connect()
+        #myAWSIoTMQTTClient3.connect()
+        #myAWSIoTMQTTClient4.connect()
 
         connected = True
         break
@@ -182,10 +216,10 @@ if not connected:
 
 # Successfully connected to the core
 if MODE == 'both' or MODE == 'subscribe':
-    myAWSIoTMQTTClient1.subscribe(topic, 0, None)
+    #myAWSIoTMQTTClient1.subscribe(topic, 0, None)
     myAWSIoTMQTTClient2.subscribe(topic, 0, None)
-    myAWSIoTMQTTClient3.subscribe(topic, 0, None)
-    myAWSIoTMQTTClient4.subscribe(topic, 0, None)
+    #myAWSIoTMQTTClient3.subscribe(topic, 0, None)
+    #myAWSIoTMQTTClient4.subscribe(topic, 0, None)
 time.sleep(2)
 print("\n\n\n ----------------------------------------------------------------------------------------------------\n"
       "                                      Ready to accept client's message"
@@ -205,12 +239,12 @@ if MODE == 'both' or MODE == 'publish':
     message['message'] = MESSAGE
     message['sequence'] = loopCount
     messageJson = json.dumps(message)
-    myAWSIoTMQTTClient1.publish(topic, messageJson, 0)
+    print(type(messageJson))
+    #myAWSIoTMQTTClient1.publish(topic, messageJson, 0)
     myAWSIoTMQTTClient2.publish(topic, messageJson, 0)
-    myAWSIoTMQTTClient3.publish(topic, messageJson, 0)
-    myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
-    if MODE == 'publish':
-        print('Published topic %s: %s\n' % (topic, messageJson))
+    #myAWSIoTMQTTClient3.publish(topic, messageJson, 0)
+    #myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
+    print('Published topic %s: %s\n' % (topic, messageJson))
     loopCount += 1
 
 #run server.py
@@ -222,3 +256,9 @@ print("\n ----------------------------------------------------------------------
       % (topic, messageJson))
 
 print("\n -----------------------------------------------------------------------------------------")
+
+a=1
+while 1:
+    if cur_frame>=a:
+        a+=1
+        print(cur_frame, "frame running time : ", time.time()-start_time11)

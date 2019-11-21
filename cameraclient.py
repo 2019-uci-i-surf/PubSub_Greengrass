@@ -24,6 +24,7 @@ class CameraClient:
             self.socket.sendall(bytes(str(time.time()), encoding='utf-8'))
             while True:
                 success, image = vidcap.read()
+                print(type(image))
                 if not success:
                     print('video is not opened!')
                     break

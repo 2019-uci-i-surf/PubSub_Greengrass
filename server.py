@@ -7,8 +7,6 @@ from queue import Queue
 import json
 import broadcast
 
-
-
 class Server:
     def __init__(self, host, port): # open socket
         self.socket = socket(AF_INET, SOCK_STREAM)
