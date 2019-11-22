@@ -13,15 +13,15 @@ from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestEx
 from settings import *
 from queue import Queue
 from mobilenettest import MobileNetTest
-import base64
+from multiprocessing import Process
 
-
+frame_queue = Queue()
 start_time11 = time.time()
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
 # General message notification callback
-count=0
+ready_count=0
 cur_frame=1
 single_frame=b""
 
@@ -33,11 +33,11 @@ def customOnMessage(message):
     #       % (message.topic, message.payload))
 
 def get_message(client_message):
-    global count
-    count = count
+    global ready_count
+    ready_count = ready_count
     # print("first message : ", sys.getsizeof(client_message))
-    # print("asadasdasd : ", type(client_message))
-    # print("asdasdasda : ", client_message)
+    #print("asadasdasd : ", type(client_message))
+    #print("asdasdasda : ", client_message)
 
     client_id_idx = client_message.find(b"client_id")
     data_size_idx = client_message.find(b"data_size")
@@ -56,32 +56,49 @@ def get_message(client_message):
     #
     # print("5 : ", frame_data)
     # print("5555555 : ", type(frame_data))
-    #
+
     if frame_data == b"READY":
-        count = count + 1
+        ready_count = ready_count + 1
         print("   Receive ready message from", frame_data)
     else:
-        if frame_num != 0:
-            make_frame(frame_num, frame_data)
+        #print("111111111111111111111111111", frame_num)
+        frame_queue.put((frame_num, frame_data))
+        #print(frame_queue.qsize())
+
+def make_frame():
+    #print("22222222222222222222222")
+    while(1):
+        #print("33333333333333333333333")
+        if frame_queue.empty():
+            continue
+        #print("444444444444444444444444")
+
+        frame_num, frame_data = frame_queue.get()
+        #print(frame_num, frame_data)
+        #print(type(frame_num), type(frame_data))
+        if frame_num==-1:
+            break
+
+        global cur_frame
+        cur_frame = cur_frame
+        global single_frame
+        single_frame = single_frame
+
+        if frame_num == cur_frame:
+            single_frame += frame_data
+        else:
+            image = numpy.load(BytesIO(single_frame))['frame']
+            #print("12312312312312321312312 : ", cur_frame, "  ", frame_num)
+            run_mobilenet(image, cur_frame)
+
+            cur_frame = frame_num
+            single_frame = frame_data
+        if cur_frame == 461:
+            break
+    print("Making frame complete")
 
 
 
-
-def make_frame(frame_num, frame_data):
-    global cur_frame
-    cur_frame = cur_frame
-    global single_frame
-    single_frame = single_frame
-    if frame_num == cur_frame:
-        single_frame+=frame_data
-    else:
-        image = numpy.load(BytesIO(single_frame))['frame']
-        #print("size : ", len(image), image)
-
-        run_mobilenet(image, cur_frame)
-
-        cur_frame = frame_num
-        single_frame = frame_data
 
 def run_mobilenet(frame, cur_frame):
     myAWSIoTMQTTClient2.mobile_net.run(frame, cur_frame)
@@ -225,7 +242,7 @@ print("\n\n\n ------------------------------------------------------------------
       "                                      Ready to accept client's message"
       "\n ----------------------------------------------------------------------------------------------------\n")
 while 1:
-    if count == NUMBER_OF_CLIENT:
+    if ready_count == NUMBER_OF_CLIENT:
         print("\n ----------------------------------------------------------------------------------------------------\n"
               "   Successful connection with clients"
               "\n ----------------------------------------------------------------------------------------------------\n")
@@ -254,13 +271,11 @@ print("\n ----------------------------------------------------------------------
       "\n   Run server.py"
       "\n -----------------------------------------------------------------------------------------\n"
       % (topic, messageJson))
-
 print("\n -----------------------------------------------------------------------------------------")
 
-a=1
-while 1:
-    if cur_frame>=a:
-        a+=1
-        print(cur_frame, "frame running time : ", time.time()-start_time11)
-    if cur_frame==461:
-        break
+start_time = time.time()
+proc1 = Process(target=make_frame())
+proc1.start()
+#proc1.join()
+print("Execution time : ", time.time()- start_time)
+sys.exit()

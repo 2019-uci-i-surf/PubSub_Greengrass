@@ -15,10 +15,6 @@ import base64
 from io import BytesIO
 from multiprocessing import Process, Queue
 
-start_time11 = time.time()
-send_count=0
-
-
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
@@ -147,69 +143,43 @@ if MODE == 'both' or MODE == 'publish':
 while 1:
     if(broadcast==1):
         break
-
+time.sleep(3)
 print("   Start Send Video\n"
       " ----------------------------------------------------------------------------------------------------\n")
-time.sleep(5)
 
-def put_frame():
-    put_count = 0
+def send_frame():
     vidcap = cv2.VideoCapture(VIDEO_PATH)
-    global send_count
-    send_count=send_count
+    send_count=0
     while True:
         success, image = vidcap.read()
         if success != True:
             break
-        put_count += 1
-
+        send_count += 1
         bytes_io = BytesIO()
         numpy.savez_compressed(bytes_io, frame=image)
         bytes_io.seek(0)
         bytes_image = bytes_io.read()  # byte per 1frame
-        send_count+=1
-        size=0
+
         while len(bytes_image) > 0:
             sep_data = bytes_image[0:100000]
             bytes_image = bytes_image[100000:]
 
-            # msg = {}
-            # msg["client_id"] = CLIENT_ID
-            # msg["data_size"] = len(sep_data)
-            # msg["frame_num"] = send_count
-            # msg["frame_data"] = send_data
-            # msg["packet_end"] = ""
-
-            #messageJson = json.dumps(msg)
-            #print("messageJson size : ", sys.getsizeof(messageJson))
-            #print("messageJson type : ", type(messageJson))
             send_data = bytearray(("client_id:" + CLIENT_ID + "data_size:" + str(len(sep_data)) \
                         + "frame_num:" + str(send_count) + "frame_data:").encode()) + bytearray(sep_data) + bytearray(("packet_end").encode())
             myAWSIoTMQTTClient.publish(topic, send_data, 0)
-            print("send_count : ", send_count)
+        print("send_frame : ", send_count)
+        if send_count == 461:
+            break
+
+    send_data = bytearray(("client_id:" + CLIENT_ID + "data_size:" + str(-1) \
+                           + "frame_num:" + str(-1) + "frame_data:").encode()) + bytearray(b'-1') + bytearray(("packet_end").encode())
+    myAWSIoTMQTTClient.publish(topic, send_data, 0)
+    print("send_end_symbol")
 
 
 
-        #msg = ('Start_Symbol' + CLIENT_ID + 'Id_Symbol' + str(len(bytes_image)) + 'Size_Symbol' + str(put_count) + 'Frame_Num').encode() + bytes_image + ('End_Symbol').encode()
-        #print(sent_count)
-        #print(type(msg))
-        #print(byte_array)
-        #print()
-
-        print("qsize : ", wait_send_queue.qsize(), "put_count : ", put_count)
-
-
-
-
-
-wait_send_queue = Queue()
-#number_of_sent_frame = 0
-
-put_frame()
-
-print("running time : ", time.time() - start_time11)
-
-while 1:
-    if send_count == 461:
-        break
-
+start_time = time.time()
+send_frame()
+Execution_time = time.time() - start_time
+print("Execution time : ", Execution_time)
+print("Frame rate transmitted per second : ", round(float(461)/Execution_time, 3))
