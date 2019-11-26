@@ -11,86 +11,69 @@ from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCor
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
 from settings import *
-from queue import Queue
 from mobilenettest import MobileNetTest
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 
-frame_queue = Queue()
-start_time11 = time.time()
+data_queue1 = Queue()
+data_queue2 = Queue()
+data_queue3 = Queue()
+data_queue4 = Queue()
 
 AllowedActions = ['both', 'publish', 'subscribe']
 
 # General message notification callback
 ready_count=0
-cur_frame=1
-single_frame=b""
+
 
 def customOnMessage(message):
     get_message(message.payload)
-    # print("\n\n\n ----------------------------------------------------------------------------------------------------\n"
-    #       "   Received message on topic %s: %s\n"
-    #       " ----------------------------------------------------------------------------------------------------\n"
-    #       % (message.topic, message.payload))
+
 
 def get_message(client_message):
-    global ready_count
-    ready_count = ready_count
-    # print("first message : ", sys.getsizeof(client_message))
-    #print("asadasdasd : ", type(client_message))
-    #print("asdasdasda : ", client_message)
-
     client_id_idx = client_message.find(b"client_id")
     data_size_idx = client_message.find(b"data_size")
     frame_num_idx = client_message.find(b"frame_num")
     frame_data_idx = client_message.find(b"frame_data")
     packet_end_idx = client_message.find(b"packet_end")
 
-    client_id = client_message[client_id_idx+10:data_size_idx].decode()
-    data_size = int(client_message[data_size_idx+10:frame_num_idx].decode())
-    frame_num = int(client_message[frame_num_idx+10:frame_data_idx].decode())
-    frame_data = client_message[frame_data_idx+11:packet_end_idx]
+    client_id = client_message[client_id_idx + 10:data_size_idx].decode()
+    data_size = int(client_message[data_size_idx + 10:frame_num_idx].decode())
+    frame_num = int(client_message[frame_num_idx + 10:frame_data_idx].decode())
+    frame_data = client_message[frame_data_idx + 11:packet_end_idx]
 
-    # print("2 : ", client_id)
-    # print("3 : ", data_size)
-    # print("4 : ", frame_num)
-    #
-    # print("5 : ", frame_data)
-    # print("5555555 : ", type(frame_data))
+    print(client_id, frame_num)
 
     if frame_data == b"READY":
+        global ready_count
+        ready_count = ready_count
         ready_count = ready_count + 1
-        print("   Receive ready message from", frame_data)
     else:
-        #print("111111111111111111111111111", frame_num)
-        frame_queue.put((frame_num, frame_data))
-        #print(frame_queue.qsize())
+        if client_id == 'RPI1':
+            data_queue1.put((frame_num, client_id, frame_data))
+        elif client_id == 'RPI2':
+            data_queue2.put((frame_num, client_id, frame_data))
+        elif client_id == 'RPI3':
+            data_queue3.put((frame_num, client_id, frame_data))
+        elif client_id == 'RPI4':
+            data_queue4.put((frame_num, client_id, frame_data))
 
-def make_frame():
-    #print("22222222222222222222222")
-    while(1):
-        #print("33333333333333333333333")
-        if frame_queue.empty():
+
+def make_frame(data_queue, myAWSIoTMQTTClient):
+    cur_frame = 1
+    single_frame = b""
+    while 1:
+        if data_queue.empty():
             continue
-        #print("444444444444444444444444")
 
-        frame_num, frame_data = frame_queue.get()
-        #print(frame_num, frame_data)
-        #print(type(frame_num), type(frame_data))
-        if frame_num==-1:
-            break
-
-        global cur_frame
-        cur_frame = cur_frame
-        global single_frame
-        single_frame = single_frame
+        frame_num, client_id, frame_data = data_queue.get()
 
         if frame_num == cur_frame:
             single_frame += frame_data
         else:
+            #print(len(single_frame), data_queue.qsize(), frame_num, cur_frame)
             image = numpy.load(BytesIO(single_frame))['frame']
-            #print("12312312312312321312312 : ", cur_frame, "  ", frame_num)
-            run_mobilenet(image, cur_frame)
-
+            #frame_queue.put((image, client_id, cur_frame))
+            run_mobilenet(image, client_id, cur_frame, myAWSIoTMQTTClient)
             cur_frame = frame_num
             single_frame = frame_data
         if cur_frame == 461:
@@ -98,12 +81,9 @@ def make_frame():
     print("Making frame complete")
 
 
-
-
-def run_mobilenet(frame, cur_frame):
-    myAWSIoTMQTTClient2.mobile_net.run(frame, cur_frame)
-    #print("frame num: ", cur_frame)
-    #print(frame)
+def run_mobilenet(frame, client_id, frame_num, myAWSIoTMQTTClient):
+    myAWSIoTMQTTClient.mobile_net.run(frame, frame_num)
+    print(frame_num, "Frame of", client_id, "Execution complete")
 
 MAX_DISCOVERY_RETRIES = 10
 GROUP_CA_PATH = "./groupCA/"
@@ -274,8 +254,26 @@ print("\n ----------------------------------------------------------------------
 print("\n -----------------------------------------------------------------------------------------")
 
 start_time = time.time()
-proc1 = Process(target=make_frame())
-proc1.start()
-#proc1.join()
+# proc1 = Process(target=make_frame(data_queue1, 1, b""))
+# proc1.start()
+proc2 = Process(target=make_frame(data_queue2, myAWSIoTMQTTClient2))
+proc2.start()
+
+proc2.join()
+
+
+
+
+# proc3 = Process(target=make_frame(data_queue3, 1, b""))
+# proc3.start()
+# proc4 = Process(target=make_frame(data_queue4, 1, b""))
+# proc4.start()
+
+# proc1.join()
+
+# proc3.join()
+# proc4.join()
+
+
 print("Execution time : ", time.time()- start_time)
-sys.exit()
+sys.exit(0)

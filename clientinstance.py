@@ -4,6 +4,7 @@ from io import BytesIO
 from settings import *
 from threading import Thread
 
+
 class ClientInstance:
     def __init__(self, MBNet, conn, addr, queue):
         self.MBNet = MBNet
