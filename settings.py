@@ -9,6 +9,7 @@ DIR_CERT = r'certification/b23fc3ba4f.cert.pem'     # *
 DIR_KEY = r'certification/b23fc3ba4f.private.key'   # *
 THING_NAME = r'Unsang_Laptop'                       # *
 MESSAGE = THING_NAME + r" BROADCAST"
+NUMBER_OF_FRAME = 461
 
 # Need to change on Client part
 CLIENT_ID = THING_NAME                                # *
@@ -17,10 +18,11 @@ RATE_OF_SENDING_PART = 20
 
 # Need to change on Server part
 SERVER_QUEUE_SIZE = 50                              # *
-NUMBER_OF_CLIENT = 1                                # *
+NUMBER_OF_CLIENT = 2                                # *
+NUMBER_OF_VIDEOS_EACH_CLIENT = 1                     # *
 CLIENT1_HOST = "192.168.1."
 CLIENT2_HOST = "192.168.1.11"
-CLIENT3_HOST = "192.168.1."
+CLIENT3_HOST = "192.168.1.2"
 CLIENT4_HOST = "192.168.1."
 CLIENT_PORT = 8883
 

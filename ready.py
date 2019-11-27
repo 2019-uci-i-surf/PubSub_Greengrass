@@ -7,13 +7,11 @@ from AWSIoTPythonSDK.core.protocol.connection.cores import ProgressiveBackOffCor
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from AWSIoTPythonSDK.exception.AWSIoTExceptions import DiscoveryInvalidRequestException
 import time
-import json
 from settings import *
 import cv2
 import numpy
-import base64
 from io import BytesIO
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Lock
 
 
 AllowedActions = ['both', 'publish', 'subscribe']
@@ -147,7 +145,7 @@ time.sleep(3)
 print("   Start Send Video\n"
       " ----------------------------------------------------------------------------------------------------\n")
 
-def send_frame():
+def send_frame(lock):
     vidcap = cv2.VideoCapture(VIDEO_PATH)
     send_count=0
     while True:
@@ -159,7 +157,7 @@ def send_frame():
         numpy.savez_compressed(bytes_io, frame=image)
         bytes_io.seek(0)
         bytes_image = bytes_io.read()  # byte per 1frame
-
+        lock.acquire()
         while len(bytes_image) > 0:
             sep_data = bytes_image[0:100000]
             bytes_image = bytes_image[100000:]
@@ -168,6 +166,7 @@ def send_frame():
                         + "frame_num:" + str(send_count) + "frame_data:").encode()) + bytearray(sep_data) + bytearray(("packet_end").encode())
             myAWSIoTMQTTClient.publish(topic, send_data, 0)
         print("send_frame : ", send_count)
+        lock.release()
         if send_count == 461:
             break
 
@@ -177,9 +176,18 @@ def send_frame():
     print("send_end_symbol")
 
 
+if __name__ == '__main__':
+    start_time = time.time()
+    lock = Lock()
+    proc_list = []
+    for i in range(NUMBER_OF_SEND_VIDEO):
+        proc = Process(target=send_frame, args=(lock,))
+        proc_list.append(proc)
+        proc.start()
 
-start_time = time.time()
-send_frame()
-Execution_time = time.time() - start_time
-print("Execution time : ", Execution_time)
-print("Frame rate transmitted per second : ", round(float(461)/Execution_time, 3))
+    for i in range(NUMBER_OF_SEND_VIDEO):
+        proc_list[i].join()
+
+    Execution_time = time.time() - start_time
+    print("Execution time : ", Execution_time)
+    print("Frame rate transmitted per second : ", round(float(461)/Execution_time, 3))
