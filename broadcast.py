@@ -25,7 +25,6 @@ data_queue3 = Queue()
 data_queue4 = Queue()
 
 
-
 def customOnMessage(message):
     get_message(message.payload)
 
@@ -68,7 +67,7 @@ def make_frame(data_queue, frame_queue):
             print(client_id, frame_num)
             image = numpy.load(BytesIO(single_frame))['frame']
             frame_queue.put((image, client_id, frame_num))
-            count+=1
+            count += 1
             if count == NUMBER_OF_FRAME * NUMBER_OF_VIDEOS_EACH_CLIENT:
                 break
     print("Making frame complete")
@@ -164,29 +163,26 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     # Iterate through all connection options for the core and use the first successful one
-    # myAWSIoTMQTTClient1 = AWSIoTMQTTClient(clientId)
+    myAWSIoTMQTTClient1 = AWSIoTMQTTClient(clientId)
     myAWSIoTMQTTClient2 = AWSIoTMQTTClient(clientId)
     myAWSIoTMQTTClient3 = AWSIoTMQTTClient(clientId)
-    # myAWSIoTMQTTClient4 = AWSIoTMQTTClient(clientId)
+    myAWSIoTMQTTClient4 = AWSIoTMQTTClient(clientId)
 
-    # myAWSIoTMQTTClient1.configureCredentials(groupCA, privateKeyPath, certificatePath)
+    myAWSIoTMQTTClient1.configureCredentials(groupCA, privateKeyPath, certificatePath)
     myAWSIoTMQTTClient2.configureCredentials(groupCA, privateKeyPath, certificatePath)
     myAWSIoTMQTTClient3.configureCredentials(groupCA, privateKeyPath, certificatePath)
-    # myAWSIoTMQTTClient4.configureCredentials(groupCA, privateKeyPath, certificatePath)
+    myAWSIoTMQTTClient4.configureCredentials(groupCA, privateKeyPath, certificatePath)
 
-    # myAWSIoTMQTTClient1.onMessage = customOnMessage
+    myAWSIoTMQTTClient1.onMessage = customOnMessage
     myAWSIoTMQTTClient2.onMessage = customOnMessage
     myAWSIoTMQTTClient3.onMessage = customOnMessage
-    # myAWSIoTMQTTClient4.onMessage = customOnMessage
+    myAWSIoTMQTTClient4.onMessage = customOnMessage
 
     connected = False
     for connectivityInfo in coreInfo.connectivityInfoList:
-        # currentHost = connectivityInfo.host
-        # currentPort = connectivityInfo.port
-
         currentPort = 8883
         print("Trying to connect to core at %s:%d" % (CLIENT1_HOST, currentPort))
-        # myAWSIoTMQTTClient1.configureEndpoint(CLIENT1_HOST, currentPort)
+        myAWSIoTMQTTClient1.configureEndpoint(CLIENT1_HOST, currentPort)
 
         print("Trying to connect to core at %s:%d" % (CLIENT2_HOST, currentPort))
         myAWSIoTMQTTClient2.configureEndpoint(CLIENT2_HOST, currentPort)
@@ -195,13 +191,13 @@ if __name__ == '__main__':
         myAWSIoTMQTTClient3.configureEndpoint(CLIENT3_HOST, currentPort)
 
         print("Trying to connect to core at %s:%d" % (CLIENT4_HOST, currentPort))
-        # myAWSIoTMQTTClient4.configureEndpoint(CLIENT4_HOST, currentPort)
+        myAWSIoTMQTTClient4.configureEndpoint(CLIENT4_HOST, currentPort)
 
         try:
-            # myAWSIoTMQTTClient1.connect()
+            myAWSIoTMQTTClient1.connect()
             myAWSIoTMQTTClient2.connect()
             myAWSIoTMQTTClient3.connect()
-            # myAWSIoTMQTTClient4.connect()
+            myAWSIoTMQTTClient4.connect()
 
             connected = True
             break
@@ -216,10 +212,10 @@ if __name__ == '__main__':
 
     # Successfully connected to the core
     if MODE == 'both' or MODE == 'subscribe':
-        # myAWSIoTMQTTClient1.subscribe(topic, 0, None)
+        myAWSIoTMQTTClient1.subscribe(topic, 0, None)
         myAWSIoTMQTTClient2.subscribe(topic, 0, None)
         myAWSIoTMQTTClient3.subscribe(topic, 0, None)
-        # myAWSIoTMQTTClient4.subscribe(topic, 0, None)
+        myAWSIoTMQTTClient4.subscribe(topic, 0, None)
     time.sleep(2)
     print(
         "\n\n\n ----------------------------------------------------------------------------------------------------\n"
@@ -242,10 +238,10 @@ if __name__ == '__main__':
         message['sequence'] = loopCount
         messageJson = json.dumps(message)
         print(type(messageJson))
-        # myAWSIoTMQTTClient1.publish(topic, messageJson, 0)
+        myAWSIoTMQTTClient1.publish(topic, messageJson, 0)
         myAWSIoTMQTTClient2.publish(topic, messageJson, 0)
         myAWSIoTMQTTClient3.publish(topic, messageJson, 0)
-        # myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
+        myAWSIoTMQTTClient4.publish(topic, messageJson, 0)
         print('Published topic %s: %s\n' % (topic, messageJson))
         loopCount += 1
 
@@ -261,18 +257,24 @@ if __name__ == '__main__':
     frame_queue = Queue()
     start_time = time.time()
 
+    proc1 = Process(target=make_frame, args=(data_queue1, frame_queue))
+    proc1.start()
     proc2 = Process(target=make_frame, args=(data_queue2, frame_queue))
     proc2.start()
-
     proc3 = Process(target=make_frame, args=(data_queue3, frame_queue))
     proc3.start()
+    proc4 = Process(target=make_frame, args=(data_queue4, frame_queue))
+    proc4.start()
 
     proc_mobilenet = Process(target=run_mobilenet, args=(frame_queue,))
     proc_mobilenet.start()
 
+    proc1.join()
     proc2.join()
     proc3.join()
+    proc4.join()
     proc_mobilenet.join()
 
     print("Execution time : ", time.time() - start_time)
+    print("Avg FPS : ", (time.time()-start_time)/461)
     sys.exit(-2)
